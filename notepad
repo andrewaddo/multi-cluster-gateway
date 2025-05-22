@@ -1,0 +1,45 @@
+gcloud projects get-iam-policy $PROJECT_ID \
+  --flatten="bindings[].members" \
+  --filter="bindings.role=roles/compute.networkViewer" \
+  --format="table(bindings.role, bindings.members)"
+
+gcloud projects get-iam-policy $PROJECT_ID \
+  --flatten="bindings[].members" \
+  --filter="bindings.role=roles/container.admin" \
+  --format="table(bindings.role, bindings.members)"
+
+fetch https_lb_rule
+| metric 'loadbalancing.googleapis.com/https/backend_request_count'
+| filter (resource.url_map_name == 'gkemcg1-traffic-test-store-armvfyupay1t')
+| align rate(1m)
+| every 1m
+| group_by [resource.backend_scope],
+    [value_backend_request_count_aggregate:
+        aggregate(value.backend_request_count)]
+
+loadbalancing_googleapis_com:https_backend_request_count{url_map_name="gkemcg1-traffic-test-store-armvfyupay1t"}
+
+sum by (backend_scope) (
+  rate(gcp_loadbalancing_https_backend_request_count_total{url_map_name="gkemcg1-traffic-test-store-armvfyupay1t"}[1m]) * 60
+)
+
+kubectl run --context gke-uscentral1-1 -i --tty --rm loadgen  \
+    --image=cyrilbkr/httperf  \
+    --restart=Never  \
+    -- /bin/sh -c 'httperf  \
+    --server=34.117.147.112  \
+    --hog --uri="/zone" --port 80  --wsess=100000,1,1 --rate 10'
+
+kubectl run --context gke-uscentral1-1 -i --tty --rm loadgen  \
+    --image=cyrilbkr/httperf  \
+    --restart=Never  \
+    -- /bin/sh -c 'httperf  \
+    --server=34.117.147.112  \
+    --hog --uri="/zone" --port 80  --wsess=100000,1,1 --rate 30'
+  
+kubectl run --context gke-uscentral1-1 -i --tty --rm loadgen  \
+    --image=cyrilbkr/httperf  \
+    --restart=Never  \
+    -- /bin/sh -c 'httperf  \
+    --server=34.117.147.112  \
+    --hog --uri="/zone" --port 80  --wsess=100000,1,1 --rate 60'
