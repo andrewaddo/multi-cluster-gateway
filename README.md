@@ -339,5 +339,5 @@ gcloud services disable \
     multiclusterservicediscovery.googleapis.com \
     multiclusteringress.googleapis.com \
     trafficdirector.googleapis.com \
-    --project=PROJECT_ID
+    --project=$PROJECT_ID
 ```
