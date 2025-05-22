@@ -284,7 +284,7 @@ You should see that us-central1-a is receiving approximately 10 RPS of traffic w
 ```
 kubectl delete pod loadgen --context gke-uscentral1-1
 ```
-####Test with 30 RPS
+#### Test with 30 RPS
 1. Deploy the load generator again, but configured to send 30 RPS:
 ```
 kubectl run --context gke-uscentral1-1 -i --tty --rm loadgen  \
@@ -304,7 +304,7 @@ You should see that approximately 20 RPS is being sent to us-central1-a and 10 R
 ```
 kubectl delete pod loadgen --context gke-uscentral1-1
 ```
-####Test with 60 RPS
+#### Test with 60 RPS
 1. Deploy the load generator configured to send 60 RPS:
 ```
 kubectl run --context gke-uscentral1-1 -i --tty --rm loadgen  \
