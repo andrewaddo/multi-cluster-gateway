@@ -15,27 +15,27 @@ gcloud services enable \
   multiclusteringress.googleapis.com \
   --project=$PROJECT_ID
 ```
-3. Create a GKE cluster in us-central1-a named gke-uscentral1-1. There would be a prompt for enabling the GKE Hub API if it is not already.
+3. Create a GKE cluster in us-central1-c named gke-uscentral1-c. There would be a prompt for enabling the GKE Hub API if it is not already.
 ```
-gcloud container clusters create gke-uscentral1-1 \
-    --gateway-api=standard \
-    --location=us-central1-a \
-    --workload-pool=$PROJECT_ID.svc.id.goog \
-    --enable-fleet \
-    --project=$PROJECT_ID
-```
-4. Create another GKE cluster in us-central1-a named gke-uscentral1-2:
-```
-gcloud container clusters create gke-uscentral1-2 \
+gcloud container clusters create gke-uscentral1-c \
     --gateway-api=standard \
     --location=us-central1-c \
     --workload-pool=$PROJECT_ID.svc.id.goog \
     --enable-fleet \
     --project=$PROJECT_ID
 ```
-5. Create another GKE cluster in europe-west1-b named gke-euwest1-1:
+4. Create another GKE cluster in us-central1-a named gke-uscentral1-a:
 ```
-gcloud container clusters create gke-euwest1-1 \
+gcloud container clusters create gke-uscentral1-a \
+    --gateway-api=standard \
+    --location=us-central1-a \
+    --workload-pool=$PROJECT_ID.svc.id.goog \
+    --enable-fleet \
+    --project=$PROJECT_ID
+```
+5. Create another GKE cluster in europe-west1-b named gke-euwest1-b:
+```
+gcloud container clusters create gke-euwest1-b \
     --gateway-api=standard \
     --location=europe-west1-b \
     --workload-pool=$PROJECT_ID.svc.id.goog \
@@ -49,25 +49,25 @@ gcloud container fleet memberships list --project=$PROJECT_ID
 ### Configure cluster credentials
 This step configures cluster credentials with memorable names. This makes it easier to switch between clusters when deploying resources across several clusters.
 
-1. Fetch the credentials for cluster gke-uscentral1-1, gke-uscentral1-2, and gke-euwest1-1:
+1. Fetch the credentials for cluster gke-uscentral1-c, gke-uscentral1-a, and gke-euwest1-b:
 ```
-gcloud container clusters get-credentials gke-uscentral1-1 --location=us-central1-a --project=$PROJECT_ID
-gcloud container clusters get-credentials gke-uscentral1-2 --location=us-central1-c --project=$PROJECT_ID
-gcloud container clusters get-credentials gke-euwest1-1 --location=europe-west1-b --project=$PROJECT_ID
+gcloud container clusters get-credentials gke-uscentral1-c --location=us-central1-c --project=$PROJECT_ID
+gcloud container clusters get-credentials gke-uscentral1-a --location=us-central1-a --project=$PROJECT_ID
+gcloud container clusters get-credentials gke-euwest1-b --location=europe-west1-b --project=$PROJECT_ID
 ```
 This stores the credentials locally so that you can use your kubectl client to access the cluster API servers. By default an auto-generated name is created for the credential.
 
 2. Rename the cluster contexts so they are easier to reference later. Replace the $PROJECT_ID with actual values before running the commands (**DO NOT COPY**)
 ```
-kubectl config rename-context gke_$PROJECT_ID_us-central1-a_gke-uscentral1-1 gke-uscentral1-1
-kubectl config rename-context gke_$PROJECT_ID_us-central1-c_gke-uscentral1-2 gke-uscentral1-2
-kubectl config rename-context gke_$PROJECT_ID_europe-west1-b_gke-euwest1-1 gke-euwest1-1
+kubectl config rename-context gke_$PROJECT_ID_us-central1-c_gke-uscentral1-c gke-uscentral1-c
+kubectl config rename-context gke_$PROJECT_ID_us-central1-a_gke-uscentral1-a gke-uscentral1-a
+kubectl config rename-context gke_$PROJECT_ID_europe-west1-b_gke-euwest1-b gke-euwest1-b
 ```
 For example,
 ```
-kubectl config rename-context gke_addo-argolis-demo_us-central1-a_gke-uscentral1-1 gke-uscentral1-1
-kubectl config rename-context gke_addo-argolis-demo_us-central1-c_gke-uscentral1-2 gke-uscentral1-2
-kubectl config rename-context gke_addo-argolis-demo_europe-west1-b_gke-euwest1-1 gke-euwest1-1
+kubectl config rename-context gke_addo-argolis-demo_us-central1-c_gke-uscentral1-c gke-uscentral1-c
+kubectl config rename-context gke_addo-argolis-demo_us-central1-a_gke-uscentral1-a gke-uscentral1-a
+kubectl config rename-context gke_addo-argolis-demo_europe-west1-b_gke-euwest1-b gke-euwest1-b
 ```
 
 ### Enable multi-cluster Services in the fleet
@@ -90,10 +90,10 @@ gcloud container fleet multi-cluster-services describe --project=$PROJECT_ID
 ### Enable multi-cluster Gateway in the fleet
 The multi-cluster GKE Gateway controller governs the deployment of multi-cluster Gateways.
 When enabling the multi-cluster Gateway controller, you must select your config cluster. The config cluster is the GKE cluster in which your Gateway resources (Gateway, Routes, Policies) are deployed. It is a central place that controls routing across your clusters. 
-1. Enable multi-cluster Gateway and specify your config cluster in your fleet. Note that you can always update the config cluster at a later time. This example specifies gke-uscentral1-1 as the config cluster that will host the resources for multi-cluster Gateways.
+1. Enable multi-cluster Gateway and specify your config cluster in your fleet. Note that you can always update the config cluster at a later time. This example specifies gke-uscentral1-c as the config cluster that will host the resources for multi-cluster Gateways.
 ```
 gcloud container fleet ingress enable \
-    --config-membership=projects/$PROJECT_ID/locations/us-central1/memberships/gke-uscentral1-1 \
+    --config-membership=projects/$PROJECT_ID/locations/us-central1/memberships/gke-uscentral1-c \
     --project=$PROJECT_ID
 ```
 2. Grant Identity and Access Management (IAM) permissions required by the multi-cluster Gateway controller. Choose "None" for condition if prompted.
@@ -109,22 +109,22 @@ gcloud container fleet ingress describe --project=$PROJECT_ID
 ```
 4. Confirm that the GatewayClasses exist in your config cluster:
 ```
-kubectl get gatewayclasses --context=gke-uscentral1-1
+kubectl get gatewayclasses --context=gke-uscentral1-c
 ```
 5. Switch your kubectl context to the config cluster:
 ```
-kubectl config use-context gke-uscentral1-1
+kubectl config use-context gke-uscentral1-c
 ```
 ### Deploy an application
 1. Deploy the sample web application server to both clusters:
 ```
-kubectl apply --context gke-uscentral1-2 -f https://raw.githubusercontent.com/GoogleCloudPlatform/gke-networking-recipes/master/gateway/docs/store-traffic-deploy.yaml
-kubectl apply --context gke-euwest1-1 -f https://raw.githubusercontent.com/GoogleCloudPlatform/gke-networking-recipes/master/gateway/docs/store-traffic-deploy.yaml
+kubectl apply --context gke-uscentral1-a -f https://raw.githubusercontent.com/GoogleCloudPlatform/gke-networking-recipes/master/gateway/docs/store-traffic-deploy.yaml
+kubectl apply --context gke-euwest1-b -f https://raw.githubusercontent.com/GoogleCloudPlatform/gke-networking-recipes/master/gateway/docs/store-traffic-deploy.yaml
 ```
 ### Deploy a Service, Gateway, and HTTPRoute
-1. Apply the following Service manifest to both gke-uscentral1-2 and gke-euwest1-1 clusters:
+1. Apply the following Service manifest to both gke-uscentral1-a and gke-euwest1-b clusters:
 ```
-cat << EOF | kubectl apply --context gke-uscentral1-2 -f -
+cat << EOF | kubectl apply --context gke-uscentral1-a -f -
 apiVersion: v1
 kind: Service
 metadata:
@@ -149,7 +149,7 @@ metadata:
 EOF
 ```
 ```
-cat << EOF | kubectl apply --context gke-euwest1-1 -f -
+cat << EOF | kubectl apply --context gke-euwest1-b -f -
 apiVersion: v1
 kind: Service
 metadata:
@@ -173,13 +173,13 @@ metadata:
   namespace: traffic-test
 EOF
 ```
-2. Apply the following Gateway manifest to the config cluster, gke-uscentral1-1 in this example:
-Create a namespace in gke-uscentral1-1 cluster if needed:
+2. Apply the following Gateway manifest to the config cluster, gke-uscentral1-c in this example:
+Create a namespace in gke-uscentral1-c cluster if needed:
 ```
-kubectl --context gke-uscentral1-1 create namespace traffic-test
+kubectl --context gke-uscentral1-c create namespace traffic-test
 ```
 ```
-cat << EOF | kubectl apply --context gke-uscentral1-1 -f -
+cat << EOF | kubectl apply --context gke-uscentral1-c -f -
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1beta1
 metadata:
@@ -196,9 +196,9 @@ spec:
       - kind: HTTPRoute
 EOF
 ```
-3. Apply the following HTTPRoute manifest to the config cluster, gke-uscentral1-1 in this example:
+3. Apply the following HTTPRoute manifest to the config cluster, gke-uscentral1-c in this example:
 ```
-cat << EOF | kubectl apply --context gke-uscentral1-1 -f -
+cat << EOF | kubectl apply --context gke-uscentral1-c -f -
 kind: HTTPRoute
 apiVersion: gateway.networking.k8s.io/v1beta1
 metadata:
@@ -226,14 +226,14 @@ curl $IP_ADDRESS
 ```
 **Notes:** It might take several minutes (up to 10) for the Gateway to fully deploy and serve traffic. Please wait and try again if you didn't see the expected output (**DO NOT COPY**)
 ```
-{"cluster_name":"gke-uscentral1-2","gce_instance_id":"1053164866380178954","gce_service_account":"addo-argolis-demo.svc.id.goog","host_header":"34.117.147.112","pod_name":"store-7c798f7497-9bjl5","pod_name_emoji":"\ud83e\udd38\ud83c\udffb","project_id":"addo-argolis-demo","timestamp":"2025-05-22T08:43:57","zone":"us-central1-c"}
+{"cluster_name":"gke-uscentral1-a","gce_instance_id":"1053164866380178954","gce_service_account":"addo-argolis-demo.svc.id.goog","host_header":"34.117.147.112","pod_name":"store-7c798f7497-9bjl5","pod_name_emoji":"\ud83e\udd38\ud83c\udffb","project_id":"addo-argolis-demo","timestamp":"2025-05-22T08:43:57","zone":"us-central1-a"}
 ```
 ## Verify traffic using load testing
-To verify the load balancer is working, you can deploy a traffic generator in your gke-uscentral1-1 cluster
+To verify the load balancer is working, you can deploy a traffic generator in your gke-uscentral1-c cluster
 ### Configure dashboard
 1. Get the name of the underying URLmap for your Gateway:
 ```
-kubectl get gateway store -n traffic-test --context=gke-uscentral1-1 -o=jsonpath="{.metadata.annotations.networking\.gke\.io/url-maps}"
+kubectl get gateway store -n traffic-test --context=gke-uscentral1-c -o=jsonpath="{.metadata.annotations.networking\.gke\.io/url-maps}"
 ```
 The output is similar to the following:
 ```
@@ -257,9 +257,9 @@ rate(loadbalancing_googleapis_com:https_backend_request_count{
 5. Click Run query. Wait at least 5 minutes after deploying the load generator in the next section for the metrics to display in the chart.
 ### Test with 10 RPS / 30 RPS / 60 RPS
 #### Test with 10 RPS
-1. Deploy a Pod to your gke-uscentral1-1 cluster:
+1. Deploy a Pod to your gke-uscentral1-c cluster:
 ```
-kubectl run --context gke-uscentral1-1 -i --tty --rm loadgen  \
+kubectl run --context gke-uscentral1-c -i --tty --rm loadgen  \
     --image=cyrilbkr/httperf  \
     --restart=Never  \
     -- /bin/sh -c 'httperf  \
@@ -278,16 +278,16 @@ The generator takes up to 5 minutes to generate traffic for the dashboard.
 
 2. View your Metrics explorer dashboard. Two lines appear, indicating how much traffic is load balanced to each of the clusters:
 
-You should see that us-central1-a is receiving approximately 10 RPS of traffic while europe-west1-b is not receiving any traffic. Because the traffic generator is running in us-central1, all traffic is sent to the Service in the gke-uscentral1-1 cluster.
+You should see that us-central1-c is receiving approximately 10 RPS of traffic while europe-west1-b is not receiving any traffic. Because the traffic generator is running in us-central1, all traffic is sent to the Service in the gke-uscentral1-c cluster.
 
 3. Stop the load generator using Ctrl+C, then delete the pod:
 ```
-kubectl delete pod loadgen --context gke-uscentral1-1
+kubectl delete pod loadgen --context gke-uscentral1-c
 ```
 #### Test with 30 RPS
 1. Deploy the load generator again, but configured to send 30 RPS:
 ```
-kubectl run --context gke-uscentral1-1 -i --tty --rm loadgen  \
+kubectl run --context gke-uscentral1-c -i --tty --rm loadgen  \
     --image=cyrilbkr/httperf  \
     --restart=Never  \
     -- /bin/sh -c 'httperf  \
@@ -298,16 +298,16 @@ The generator takes up to 5 minutes to generate traffic for the dashboard.
 
 2. View your Cloud Ops dashboard.
 
-You should see that approximately 20 RPS is being sent to us-central1-a and 10 RPS to europe-west1-b. This indicates that the Service in gke-uscentral1-1 is fully utilized and is overflowing 10 RPS of traffic to the Service in gke-euwest1-1.
+You should see that approximately 20 RPS is being sent to us-central1-c and 10 RPS to europe-west1-b. This indicates that the Service in gke-uscentral1-c is fully utilized and is overflowing 10 RPS of traffic to the Service in gke-euwest1-b.
 
 3. Stop the load generator using Ctrl+C, then delete the Pod:
 ```
-kubectl delete pod loadgen --context gke-uscentral1-1
+kubectl delete pod loadgen --context gke-uscentral1-c
 ```
 #### Test with 60 RPS
 1. Deploy the load generator configured to send 60 RPS:
 ```
-kubectl run --context gke-uscentral1-1 -i --tty --rm loadgen  \
+kubectl run --context gke-uscentral1-c -i --tty --rm loadgen  \
     --image=cyrilbkr/httperf  \
     --restart=Never  \
     -- /bin/sh -c 'httperf  \
@@ -319,7 +319,7 @@ Wait 5 minutes and view your Cloud Ops dashboard. It should now show that both c
 2. Stop the load generator using Ctrl+C, then delete the Pod:
 
 ```
-kubectl delete pod loadgen --context gke-uscentral1-1
+kubectl delete pod loadgen --context gke-uscentral1-c
 ```
 ## Clean up
 After completing the exercises on this page, follow these steps to remove resources and prevent unwanted charges incurring on your account:
